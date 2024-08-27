@@ -1,2 +1,4 @@
 test/*
 conda_env
+.nexftlow/*
+.nextflow.log*
