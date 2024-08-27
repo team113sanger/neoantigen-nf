@@ -1,0 +1,5 @@
+{
+    "bam_files": "/lustre/scratch124/casm/team113/projects/6633_PDX_models_Latin_America_WES/bams/**/**.sample.dupmarked.bam",
+    "vcf_files": "/lustre/scratch124/casm/team113/projects/6633_PDX_models_Latin_America_WES/analysis/release_v2/2729/analysis/caveman_files/**.smartphase.vep.filt.snpflagged.vcf.gz",
+    "bed": "/lustre/scratch126/casm/team113da/users/jb62/projects/PDX_neoantigen_analysis/data/HLA.bed"
+}
