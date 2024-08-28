@@ -1,5 +1,5 @@
 # Environment name.
-name: optitype
+name: neoantigen-nf
 
 # Conda channels where to pull packages from.
 channels:
