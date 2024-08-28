@@ -1,4 +1,4 @@
-include { REFORMAT_HLA; REFORMAT_VCF } from './modules/modules.nf'
+include { REFORMAT_HLA; REFORMAT_VCF } from '../modules/modules.nf'
 
 workflow REFORMAT_DATA {
 
@@ -18,7 +18,7 @@ workflow REFORMAT_DATA {
         // The output of this subworkflow will be the sample's reformatted HLA table and
         // VEP-annotated VCF.
         reformatted_hla_table = REFORMAT_HLA.out.reformatted_hla_table
-        reformatted_vcf = REFORMAT_HLA.out.reformatted_vcf
+        reformatted_vcf = REFORMAT_VCF.out.reformatted_vcf
 
 }
 

@@ -1,14 +1,51 @@
+process DOWNLOAD_REFFLAT {
+    publishDir "${params.outdir}"
+
+    output:
+        path("*.grch38.txt"), emit: refflat
+
+    script:
+        """
+        wget http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refFlat.txt.gz
+        gunzip refFlat.txt.gz
+        mv refFlat.txt refFlat.grch38.txt
+        """
+
+    stub:
+        """
+        touch refFlat.grch38.txt
+        """
+}
+
+process DOWNLOAD_REFMRNA {
+    publishDir "${params.outdir}"
+
+    output:
+        path("*.grch38.fa"), emit: refmrna
+
+    script:
+        """
+        wget http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/refMrna.fa.gz
+        gunzip refMrna.fa.gz
+        mv refMrna.fa refMrna.grch38.fa
+        """
+
+    stub:
+        """
+        touch refMrna.grch38.fa
+        """
+}
+
 process FILTER_HLA {
     publishDir "${params.outdir}/fastq"
-    conda "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/conda_env"
 
     input:
-        tuple val(SAMPLE_ID), path(BAM)
+        tuple val(SAMPLE_ID), path(BAM), path(BAI)
         path(BED)
 
     output:
-        tuple val(SAMPLE_ID), path("*_1.fq.gz"), emit: fastq_1
-        tuple val(SAMPLE_ID), path("*_2.fq.gz"), emit: fastq_2
+        tuple val(SAMPLE_ID), path("*_1.fq"), emit: fastq_1
+        tuple val(SAMPLE_ID), path("*_2.fq"), emit: fastq_2
 
     script:
         """
@@ -26,19 +63,17 @@ process FILTER_HLA {
 
     stub:
         """
-        touch ${SAMPLE_ID}_1.fq
-        touch ${SAMPLE_ID}_2.fq
+        touch HLA_${SAMPLE_ID}_1.fq
+        touch HLA_${SAMPLE_ID}_2.fq
         """
 }
 
 process HLA_TYPING {
     publishDir "${params.outdir}/hla_typing"
-    conda "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/conda_env"
 
     input:
         tuple val(SAMPLE_ID), path(FASTQ1)
         tuple val(SAMPLE_ID), path(FASTQ2)
-        path(OUTDIR)
 
     output:
         tuple val(SAMPLE_ID), path("${OUTDIR}/*/*.tsv"), emit: hla_table
@@ -49,14 +84,13 @@ process HLA_TYPING {
             -i ${FASTQ1} ${FASTQ2} \
             --dna \
             --verbose \
-            --outdir $(pwd)
+            --outdir \$(pwd)
         """
 
 }
 
 process REFORMAT_HLA {
     publishDir "${params.outdir}/hla_typing"
-    conda "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/conda_env"
 
     input:
         tuple val(SAMPLE_ID), path(HLA)
@@ -84,7 +118,6 @@ process REFORMAT_HLA {
 
 process REFORMAT_VCF {
     publishDir "${params.outdir}/vcf"
-    conda "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/conda_env"
 
     input:
         tuple val(SAMPLE_ID), path(VCF)
@@ -95,12 +128,13 @@ process REFORMAT_VCF {
     script:
         """
         touch ${SAMPLE_ID}_VCF_reformatted.txt
-        echo -e "#Uploaded_variation\tLocation\tAllele\tGene\tFeature\tFeature_type\tConsequence\tcDNA_position\tCDS_position\tProtein_position\tAmino_acids\tCodons\tExisting_variation\tExtra" >> ${SAMPLE_ID}_VCF_reformatted.txt
+        echo -e "#Uploaded_variation\tLocation\tAllele\tGene\tFeature\tFeature_type\tConsequence\tcDNA_position\tCDS_position\tProtein_position\tAmino_acids\tCodons\tExisting_variation\tExtra" \
+            >> ${SAMPLE_ID}_VCF_reformatted.txt
         bcftools +split-vep ${VCF} \
-            -f "$(basename ${VCF})\t%CHROM:%POS\t%Allele\t%Gene\t%Feature\t%Feature_type\t%Consequence\t%cDNA_position\t%CDS_position\t%Protein_position\t%Amino_acids\t%Codons\t%Existing_variation\tIMPACT=%IMPACT;DISTANCE=%DISTANCE;STRAND=%STRAND\n" \
+            -f "\$(basename ${VCF})\t%CHROM:%POS\t%Allele\t%Gene\t%Feature\t%Feature_type\t%Consequence\t%cDNA_position\t%CDS_position\t%Protein_position\t%Amino_acids\t%Codons\t%Existing_variation\tIMPACT=%IMPACT;DISTANCE=%DISTANCE;STRAND=%STRAND\n" \
             --duplicate >> \
             ${SAMPLE_ID}_VCF_reformatted.txt
-        sed -i "s/HUMAN_GRCh38_full_analysis_set_plus_decoy_hla_pulldown_${SAMPLE_ID}.smartphase.vep.vcf.gz\tchr/HUMAN_GRCh38_full_analysis_set_plus_decoy_hla_pulldown_${SAMPLE_ID}.smartphase.vep.vcf.gz\t/g" ${SAMPLE_ID}_VCF_reformatted.txt
+        sed -i "s/${SAMPLE_ID}.smartphase.vep.vcf.gz\tchr/${SAMPLE_ID}.smartphase.vep.vcf.gz\t/g" ${SAMPLE_ID}_VCF_reformatted.txt
         sed -i '/CC/d' ${SAMPLE_ID}_VCF_reformatted.txt
         sed -i '/AA/d' ${SAMPLE_ID}_VCF_reformatted.txt
         sed -i '/TT/d' ${SAMPLE_ID}_VCF_reformatted.txt
@@ -109,16 +143,15 @@ process REFORMAT_VCF {
 }
 
 process RUN_NEOANTIMON {
-    conda "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/conda_env"
 
     input:
         tuple val(SAMPLE_ID), path(REFORMATTED_HLA)
         tuple val(SAMPLE_ID), path(REFORMATTED_VCF)
+        path(REFFLAT)
+        path(REFMRNA)
         path(OUTDIR)
 
     script:
-        def REFFLAT_FILE = "/lustre/scratch126/casm/team113da/users/jb62/projects/PDX_neoantigen_analysis/data/refFlat.grch38.txt"
-        def REFMRNA_FILE = "/lustre/scratch126/casm/team113da/users/jb62/projects/PDX_neoantigen_analysis/data/refMrna.grch38.fa"
         def NET_MHC_PAN = "/lustre/scratch126/casm/team113da/users/jb62/projects/PDX_neoantigen_analysis/software/NetMHCpan/netMHCpan-4.1/netMHCpan"
         """
         #!/usr/bin/env Rscript
@@ -129,8 +162,8 @@ process RUN_NEOANTIMON {
             file_name_in_hla_table = "${SAMPLE_ID}",
             export_dir = "${OUTDIR}",
             job_id = "${SAMPLE_ID}",
-            refflat_file = "${REFFLAT_FILE}",
-            refmrna_file = "${REF_MRNA_FILE}",
+            refflat_file = "${REFFLAT}",
+            refmrna_file = "${REFMRNA}",
             netMHCpan_dir = "${NET_MHC_PAN}"
         )
         """
