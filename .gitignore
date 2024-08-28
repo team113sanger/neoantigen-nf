@@ -1,4 +1,6 @@
 test/*
 conda_env
-.nexftlow/*
+.nextflow/*
 .nextflow.log*
+work/*
+enable_conda.sh
