@@ -12,7 +12,7 @@ The configuration file `conda.yml` used in the command below is provided in this
 conda env create -n neoantigen-pipeline-env --file conda.yml
 ```
 
-## Step 2 - Add the following line to the nextflow.config file
+## Step 2 - Add the following line to the `nextflow.config` file
 If the line below already exists, update the path attributed to `process.conda` to reflect the location of the `neoantigen-pipeline-env` environment on your system.
 ```
 process.conda = 'path/to/neoantigen-pipeline-env'
@@ -25,7 +25,10 @@ CONDA_PATH=path/to/miniconda3/bin/conda
 eval "$(${CONDA_PATH} shell.bash hook)"
 ```
 
-## Step 4 - Run the neoantigen pipeline
+## Step 4 - Modify the file `params.json`
+Another thing you have to do before triggering the `neoantigen-nf` pipeline is tweak the file `params.json`, so that it contains the paths to the inputs the pipeline will need.
+
+## Step 5 - Run the neoantigen pipeline
 ```
 module load nextflow
 nextflow run main.nf -params-file params.json -c nextflow.config -profile farm22
