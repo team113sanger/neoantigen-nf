@@ -76,7 +76,8 @@ process HLA_TYPING {
         tuple val(SAMPLE_ID), path(FASTQ2)
 
     output:
-        tuple val(SAMPLE_ID), path("${OUTDIR}/*/*.tsv"), emit: hla_table
+        tuple val(SAMPLE_ID), path("\$(pwd)/*/*.tsv"), emit: hla_table
+        tuple val(SAMPLE_ID), path("\$(pwd)/*/*.pdf"), emit: figure
 
     script:
         """
