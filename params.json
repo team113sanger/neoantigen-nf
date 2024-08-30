@@ -1,5 +1,5 @@
 {
-    "data_files": "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/test/data_files.tsv",
+    "data_files": "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/test/data_files.csv",
     "bed_file": "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/test/HLA.bed",
     "net_mhc_pan": "/lustre/scratch126/casm/team113da/users/jb62/projects/PDX_neoantigen_analysis/software/NetMHCpan/netMHCpan-4.1/netMHCpan",
     "outdir": "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/test/results",

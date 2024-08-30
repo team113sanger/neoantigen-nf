@@ -68,7 +68,7 @@ process FILTER_HLA {
 }
 
 process HLA_TYPING {
-    publishDir "${params.outdir}/hla_typing", pattern: "*.tsv"
+    publishDir "${params.outdir}/hla_typing", pattern: "*/*.tsv"
     errorStrategy "ignore"
 
     input:
@@ -109,18 +109,29 @@ process REFORMAT_HLA {
         """
         #!/usr/bin/env Rscript
 
+        # Read the HLA table.
         readr::read_tsv("${HLA}", col_names = TRUE) |>
-        dplyr::mutate(Name = "${SAMPLE_ID}") |>
-        dplyr::select(Name, A1, A2, B1, B2, C1, C2) |>
-        readr::write_delim(
-            file = paste0("${SAMPLE_ID}", "_HLA_reformatted.txt"),
-            delim = "\t",
-            quote = "none",
-            append = FALSE,
-            col_names = TRUE
-        )
+
+            # Create a column called "Name", under which there will be the sample ID.
+            dplyr::mutate(Name = "${SAMPLE_ID}") |>
+
+            # Select the columns expected by Neoantimon.
+            dplyr::select(Name, A1, A2, B1, B2, C1, C2) |>
+
+            # Save the reformatted HLA table to an output file.
+            readr::write_delim(
+                file = paste0("${SAMPLE_ID}", "_HLA_reformatted.txt"),
+                delim = "\t",
+                quote = "none",
+                append = FALSE,
+                col_names = TRUE
+            )
         """
 
+    stub:
+        """
+        touch ${SAMPLE_ID}_HLA_reformatted.txt
+        """
 }
 
 process REFORMAT_VCF {
@@ -134,18 +145,32 @@ process REFORMAT_VCF {
 
     script:
         """
+        # Create a placeholder for the reformatted VCF data.
         touch ${SAMPLE_ID}_VCF_reformatted.txt
+
+        # Add a header.
         echo -e "Uploaded_variation\tLocation\tAllele\tGene\tFeature\tFeature_type\tConsequence\tcDNA_position\tCDS_position\tProtein_position\tAmino_acids\tCodons\tExisting_variation\tExtra" \
             >> ${SAMPLE_ID}_VCF_reformatted.txt
+
+        # Extract information from the VCF.
         bcftools +split-vep ${VCF} \
             -f "${SAMPLE_ID}_VCF_reformatted.txt\t%CHROM:%POS\t%Allele\t%Gene\t%Feature\t%Feature_type\t%Consequence\t%cDNA_position\t%CDS_position\t%Protein_position\t%Amino_acids\t%Codons\t%Existing_variation\tIMPACT=%IMPACT;DISTANCE=%DISTANCE;STRAND=%STRAND\n" \
             --duplicate >> \
             ${SAMPLE_ID}_VCF_reformatted.txt
+
+        # Remove the string "chr" ("Location" column) so that the data looks exactly like what Neoantimon is expecting.
         sed -i "s/${SAMPLE_ID}.smartphase.vep.filt.snpflagged.vcf.gz\tchr/${SAMPLE_ID}.smartphase.vep.filt.snpflagged.vcf.gz\t/g" ${SAMPLE_ID}_VCF_reformatted.txt
+
+        # Remove dinucleotide variation results as these are not compatible with Neoantimon.
         sed -i '/CC/d' ${SAMPLE_ID}_VCF_reformatted.txt
         sed -i '/AA/d' ${SAMPLE_ID}_VCF_reformatted.txt
         sed -i '/TT/d' ${SAMPLE_ID}_VCF_reformatted.txt
         sed -i '/GG/d' ${SAMPLE_ID}_VCF_reformatted.txt
+        """
+
+    stub:
+        """
+        touch ${SAMPLE_ID}_VCF_reformatted.txt
         """
 }
 
@@ -164,7 +189,7 @@ process RUN_NEOANTIMON {
         library(Neoantimon)
         library(biomaRt)
 
-        mkdir -p ${OUTDIR}/neoantimon/${SAMPLE_ID}
+        dir.create(${OUTDIR}/neoantimon/${SAMPLE_ID})
 
         Neoantimon::MainSNVClass1(
             input_vep_format_file = "${REFORMATTED_VCF}",
