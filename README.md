@@ -1,4 +1,6 @@
-# neoantigen-nf
+# Identifying neoantigens with the `neoantigen-nf` pipeline!
+
+The `neoantigen-nf` pipeline leverages the R-based package [Neoantimon](https://academic.oup.com/bioinformatics/article/36/18/4813/5906504) to identify neoantigens. Please follow the steps below to get started!
 
 ## Step 0 - Install Miniconda
 Go to the [Miniconda website](https://docs.anaconda.com/miniconda/) and download Miniconda3. Choose the installer link that best suits your system. You can download the installer via the command line by running the command below (please note that the link used in the example below corresponds to Miniconda3 for Linux).
@@ -24,11 +26,36 @@ Depending on how conda is set up on your system, it may be that conda is not aut
 CONDA_PATH=path/to/miniconda3/bin/conda
 eval "$(${CONDA_PATH} shell.bash hook)"
 ```
+Please note that you will have to run this command every time you start a new terminal/shell.
 
-## Step 4 - Modify the file `params.json`
-Another thing you have to do before triggering the `neoantigen-nf` pipeline is tweak the file `params.json`, so that it contains the paths to the inputs the pipeline will need.
+## Step 4 - Download the NetMHCpan software
+Follow the steps described in the [Neoantimon repository](https://github.com/hase62/Neoantimon/tree/master) to download and set up the NetMHCpan software. You can place NetMHCpan in the location that best suits you. After following that tutorial, you should have something like this:
+```
+netMHCpan-4.1
+├── data
+├── data.tar.gz
+├── Linux_x86_64
+├── netMHCpan
+├── netMHCpan.1
+├── netMHCpan-4.1.readme
+├── test
+└── tmp
+```
+Take note of the path `path/to/netMHCpan-4.1/netMHCpan` (or whatever it looks like for you on your own machine!), as you will need this path in the next step.
 
-## Step 5 - Run the neoantigen pipeline
+## Step 5 - Modify the file `params.json`
+Another thing you have to do before triggering the `neoantigen-nf` pipeline is tweak the file `params.json`, so that it contains the paths to the inputs the pipeline will need. That file should be available as part of this repository, but you can also create it from scratch following the example below:
+```
+{
+    "data_files": "path/to/data_files.tsv",
+    "bed_file": "path/to/HLA.bed",
+    "net_mhc_pan": "path/to/netMHCpan-4.1/netMHCpan",
+    "outdir": "path/to/outdir",
+    "copy_mode": "symlink"
+}
+```
+
+## Step 6 - Run the neoantigen pipeline
 ```
 module load nextflow
 nextflow run main.nf -params-file params.json -c nextflow.config -profile farm22

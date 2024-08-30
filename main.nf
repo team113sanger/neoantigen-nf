@@ -1,10 +1,10 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl = 2
 
-include { DOWNLOAD_FILES } from './subworkflows/download_files.nf'
-include { GET_HLA_TYPE } from './subworkflows/hla_typing.nf'
-include { REFORMAT_DATA } from './subworkflows/reformat_data.nf'
-include { RUN_NEOANTIMON } from './modules/modules.nf'
+include { DOWNLOAD_FILES } from "./subworkflows/download_files.nf"
+include { GET_HLA_TYPE } from "./subworkflows/hla_typing.nf"
+include { REFORMAT_DATA } from "./subworkflows/reformat_data.nf"
+include { RUN_NEOANTIMON } from "./modules/modules.nf"
 
 workflow {
     
@@ -14,11 +14,14 @@ workflow {
 
     // VCF, BAM, and BAI files.
     data = Channel.fromPath(params.data_files)       
-        .splitCsv(header: true, sep: ',')
+        .splitCsv(header: true, sep: ",")
         .map { row -> tuple(row.sample, row.vcf, row.bam, row.bai) }
 
     // BED file.
-    bed = file(params.bed_file, checkIfExists: true)               
+    bed = file(params.bed_file, checkIfExists: true)            
+
+    // NetMHCpan program.
+    netMHCpan = file(params.net_mhc_pan, checkIfExists: true)   
 
     /**********************/
     /**** Run analysis ****/
@@ -38,6 +41,7 @@ workflow {
         REFORMAT_DATA.out.data_for_neoantimon,
         DOWNLOAD_FILES.out.refflat,
         DOWNLOAD_FILES.out.refmrna,
+        netMHCpan,
         params.outdir
     )
 

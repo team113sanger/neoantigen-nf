@@ -155,11 +155,11 @@ process RUN_NEOANTIMON {
         tuple val(SAMPLE_ID), path(REFORMATTED_VCF), path(REFORMATTED_HLA)
         path(REFFLAT)
         path(REFMRNA)
+        path(NET_MHC_PAN)
         path(OUTDIR)
 
     script:
-        def NET_MHC_PAN = "/lustre/scratch126/casm/team113da/users/jb62/projects/PDX_neoantigen_analysis/software/NetMHCpan/netMHCpan-4.1/netMHCpan"
-        """
+         """
         #!/usr/bin/env Rscript
         library(Neoantimon)
         library(biomaRt)
