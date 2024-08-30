@@ -41,13 +41,23 @@ netMHCpan-4.1
 ├── test
 └── tmp
 ```
-Take note of the path `path/to/netMHCpan-4.1/netMHCpan` (or whatever it looks like for you on your own machine!), as you will need this path in the next step.
+Take note of the path `path/to/netMHCpan-4.1/netMHCpan` (or whatever it looks like for you on your own machine!), as you will need this path in **Step 6**.
 
-## Step 5 - Modify the file `params.json`
+## Step 5 - Create a file with the paths to your data
+You need to create a file - say, `data_paths.csv` - containing the IDs of your samples and the paths to your VCF, BAM and BAI files. Follow the example below:
+```
+sample,vcf,bam,bai
+sample1,path/to/vcf1,path/to/bam1,path/to/bai1
+sample2,path/to/vcf2,path/to/bam2,path/to/bai2
+sample3,path/to/vcf3,path/to/bam3,path/to/bai3
+```
+The path `path/to/data_paths.csv` will be used later on, in **Step 6**.
+
+## Step 6 - Modify the file `params.json`
 Another thing you have to do before triggering the `neoantigen-nf` pipeline is tweak the file `params.json`, so that it contains the paths to the inputs the pipeline will need. That file should be available as part of this repository, but you can also create it from scratch following the example below:
 ```
 {
-    "data_files": "path/to/data_files.tsv",
+    "data_files": "path/to/data_paths.csv",
     "bed_file": "path/to/HLA.bed",
     "net_mhc_pan": "path/to/netMHCpan-4.1/netMHCpan",
     "outdir": "path/to/outdir",
@@ -55,7 +65,7 @@ Another thing you have to do before triggering the `neoantigen-nf` pipeline is t
 }
 ```
 
-## Step 6 - Run the neoantigen pipeline
+## Step 7 - Run the neoantigen pipeline
 ```
 module load nextflow
 nextflow run main.nf -params-file params.json -c nextflow.config -profile farm22
