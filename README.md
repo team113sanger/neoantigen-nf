@@ -66,7 +66,7 @@ Another thing you have to do before triggering the `neoantigen-nf` pipeline is t
 }
 ```
 
-## Step 7 - Run the neoantigen pipeline
+## Step 7 - Run the `neoantigen-nf` pipeline
 ```
 module load nextflow
 nextflow run main.nf -params-file params.json -c nextflow.config -profile farm22
