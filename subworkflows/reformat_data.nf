@@ -3,22 +3,18 @@ include { REFORMAT_HLA; REFORMAT_VCF } from '../modules/modules.nf'
 workflow REFORMAT_DATA {
 
     take:
-        hla_table      // HLA table.
-        annotated_vcf  // VEP-annotated VCF.
+        data // VCF file and HLA table.
     
     main:
 
         // Reformat the HLA table for Neoantimon.
-        REFORMAT_HLA(hla_table)
+        REFORMAT_HLA(data)
 
         // Reformat the VEP-annotated VCF for Neoantimon.
-        REFORMAT_VCF(annotated_vcf)
+        REFORMAT_VCF(REFORMAT_HLA.out.data_for_vcf_reformatting)
 
     emit:
-        // The output of this subworkflow will be the sample's reformatted HLA table and
-        // VEP-annotated VCF.
-        reformatted_hla_table = REFORMAT_HLA.out.reformatted_hla_table
-        reformatted_vcf = REFORMAT_VCF.out.reformatted_vcf
+        data_for_neoantimon = REFORMAT_VCF.out.data_for_neoantimon
 
 }
 

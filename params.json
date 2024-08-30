@@ -1,6 +1,5 @@
 {
-    "bam_and_index": "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/test/bam_and_index.tsv",
-    "vcf_files": "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/test/vcfs/**.smartphase.vep.filt.snpflagged.vcf.gz",
+    "data_files": "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/test/data_files.tsv",
     "bed_file": "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/test/HLA.bed",
     "outdir": "/lustre/scratch124/casm/team113/users/jb62/projects/neoantigen-nf/test/results",
     "copy_mode": "symlink"

@@ -12,15 +12,13 @@ workflow {
     /**** Load input data ****/
     /*************************/
 
-    bam_and_index = Channel.fromPath(params.bam_and_index)             // BAM+BAI files.
+    // VCF, BAM, and BAI files.
+    data = Channel.fromPath(params.data_files)       
         .splitCsv(header: true, sep: ',')
-        .map { row -> tuple(row.sample, row.bam, row.bai) }
-        .view()
+        .map { row -> tuple(row.sample, row.vcf, row.bam, row.bai) }
 
-    vcfs = Channel.fromPath(params.vcf_files, checkIfExists: true)     // VCF files.
-        .map { file -> tuple(file.simpleName, file)}
-
-    bed = file(params.bed_file, checkIfExists: true)                   // BED file.
+    // BED file.
+    bed = file(params.bed_file, checkIfExists: true)               
 
     /**********************/
     /**** Run analysis ****/
@@ -30,15 +28,14 @@ workflow {
     DOWNLOAD_FILES()
 
     // Run HLA typing (MHC class I only).
-    GET_HLA_TYPE(bam_and_index, bed)
+    GET_HLA_TYPE(data, bed)
 
     // Reformat data for Neoantimon.
-    REFORMAT_DATA(GET_HLA_TYPE.out.hla_type, vcfs)
+    REFORMAT_DATA(GET_HLA_TYPE.out.data_for_hla_reformatting)
 
     // Run Neoantimon analysis.
     RUN_NEOANTIMON(
-        REFORMAT_DATA.out.reformatted_hla_table,
-        REFORMAT_DATA.out.reformatted_vcf,
+        REFORMAT_DATA.out.data_for_neoantimon,
         DOWNLOAD_FILES.out.refflat,
         DOWNLOAD_FILES.out.refmrna,
         params.outdir

@@ -37,15 +37,14 @@ process DOWNLOAD_REFMRNA {
 }
 
 process FILTER_HLA {
-    publishDir "${params.outdir}/fastq"
+    publishDir "${params.outdir}/fastq", pattern: "*.fq"
 
     input:
-        tuple val(SAMPLE_ID), path(BAM), path(BAI)
+        tuple val(SAMPLE_ID), path(VCF), path(BAM), path(BAI)
         path(BED)
 
     output:
-        tuple val(SAMPLE_ID), path("*_1.fq"), emit: fastq_1
-        tuple val(SAMPLE_ID), path("*_2.fq"), emit: fastq_2
+        tuple val(SAMPLE_ID), path(VCF), path("*_1.fq"), path("*_2.fq"), emit: data_for_hla_typing
 
     script:
         """
@@ -69,15 +68,15 @@ process FILTER_HLA {
 }
 
 process HLA_TYPING {
-    publishDir "${params.outdir}/hla_typing"
+    publishDir "${params.outdir}/hla_typing", pattern: "*.tsv"
+    errorStrategy "ignore"
 
     input:
-        tuple val(SAMPLE_ID), path(FASTQ1)
-        tuple val(SAMPLE_ID), path(FASTQ2)
+        tuple val(SAMPLE_ID), path(VCF), path(FASTQ1), path(FASTQ2)
 
     output:
-        tuple val(SAMPLE_ID), path("\$(pwd)/*/*.tsv"), emit: hla_table
-        tuple val(SAMPLE_ID), path("\$(pwd)/*/*.pdf"), emit: figure
+        tuple val(SAMPLE_ID), path(VCF), path("*/*.tsv"), emit: data_for_hla_reformatting
+        tuple val(SAMPLE_ID), path(VCF), path("*/*.pdf")
 
     script:
         """
@@ -88,16 +87,23 @@ process HLA_TYPING {
             --outdir \$(pwd)
         """
 
+    stub:
+        """
+        pwd
+        mkdir hla_typing
+        touch hla_typing/hla.tsv
+        touch hla_typing/hla.pdf
+        """
 }
 
 process REFORMAT_HLA {
-    publishDir "${params.outdir}/hla_typing"
+    publishDir "${params.outdir}/hla_typing", pattern: "*_HLA_reformatted.txt"
 
     input:
-        tuple val(SAMPLE_ID), path(HLA)
+        tuple val(SAMPLE_ID), path(VCF), path(HLA)
 
     output:
-        tuple val(SAMPLE_ID), path("*.txt"), emit: reformatted_hla_table
+        tuple val(SAMPLE_ID), path(VCF), path("*_HLA_reformatted.txt"), emit: data_for_vcf_reformatting
 
     script:
         """
@@ -118,24 +124,24 @@ process REFORMAT_HLA {
 }
 
 process REFORMAT_VCF {
-    publishDir "${params.outdir}/vcf"
+    publishDir "${params.outdir}/vcf", pattern: "*_VCF_reformatted.txt"
 
     input:
-        tuple val(SAMPLE_ID), path(VCF)
+        tuple val(SAMPLE_ID), path(VCF), path(HLA)
 
     output:
-        tuple val(SAMPLE_ID), path("*.txt"), emit: reformatted_vcf
+        tuple val(SAMPLE_ID), path("*_VCF_reformatted.txt"), path(HLA), emit: data_for_neoantimon
 
     script:
         """
         touch ${SAMPLE_ID}_VCF_reformatted.txt
-        echo -e "#Uploaded_variation\tLocation\tAllele\tGene\tFeature\tFeature_type\tConsequence\tcDNA_position\tCDS_position\tProtein_position\tAmino_acids\tCodons\tExisting_variation\tExtra" \
+        echo -e "Uploaded_variation\tLocation\tAllele\tGene\tFeature\tFeature_type\tConsequence\tcDNA_position\tCDS_position\tProtein_position\tAmino_acids\tCodons\tExisting_variation\tExtra" \
             >> ${SAMPLE_ID}_VCF_reformatted.txt
         bcftools +split-vep ${VCF} \
-            -f "\$(basename ${VCF})\t%CHROM:%POS\t%Allele\t%Gene\t%Feature\t%Feature_type\t%Consequence\t%cDNA_position\t%CDS_position\t%Protein_position\t%Amino_acids\t%Codons\t%Existing_variation\tIMPACT=%IMPACT;DISTANCE=%DISTANCE;STRAND=%STRAND\n" \
+            -f "${SAMPLE_ID}_VCF_reformatted.txt\t%CHROM:%POS\t%Allele\t%Gene\t%Feature\t%Feature_type\t%Consequence\t%cDNA_position\t%CDS_position\t%Protein_position\t%Amino_acids\t%Codons\t%Existing_variation\tIMPACT=%IMPACT;DISTANCE=%DISTANCE;STRAND=%STRAND\n" \
             --duplicate >> \
             ${SAMPLE_ID}_VCF_reformatted.txt
-        sed -i "s/${SAMPLE_ID}.smartphase.vep.vcf.gz\tchr/${SAMPLE_ID}.smartphase.vep.vcf.gz\t/g" ${SAMPLE_ID}_VCF_reformatted.txt
+        sed -i "s/${SAMPLE_ID}.smartphase.vep.filt.snpflagged.vcf.gz\tchr/${SAMPLE_ID}.smartphase.vep.filt.snpflagged.vcf.gz\t/g" ${SAMPLE_ID}_VCF_reformatted.txt
         sed -i '/CC/d' ${SAMPLE_ID}_VCF_reformatted.txt
         sed -i '/AA/d' ${SAMPLE_ID}_VCF_reformatted.txt
         sed -i '/TT/d' ${SAMPLE_ID}_VCF_reformatted.txt
@@ -146,8 +152,7 @@ process REFORMAT_VCF {
 process RUN_NEOANTIMON {
 
     input:
-        tuple val(SAMPLE_ID), path(REFORMATTED_HLA)
-        tuple val(SAMPLE_ID), path(REFORMATTED_VCF)
+        tuple val(SAMPLE_ID), path(REFORMATTED_VCF), path(REFORMATTED_HLA)
         path(REFFLAT)
         path(REFMRNA)
         path(OUTDIR)
@@ -156,12 +161,16 @@ process RUN_NEOANTIMON {
         def NET_MHC_PAN = "/lustre/scratch126/casm/team113da/users/jb62/projects/PDX_neoantigen_analysis/software/NetMHCpan/netMHCpan-4.1/netMHCpan"
         """
         #!/usr/bin/env Rscript
+        library(Neoantimon)
+        library(biomaRt)
 
-        MainSNVClass1(
+        mkdir -p ${OUTDIR}/neoantimon/${SAMPLE_ID}
+
+        Neoantimon::MainSNVClass1(
             input_vep_format_file = "${REFORMATTED_VCF}",
             hla_file = "${REFORMATTED_HLA}",
             file_name_in_hla_table = "${SAMPLE_ID}",
-            export_dir = "${OUTDIR}",
+            export_dir = "${OUTDIR}/neoantimon/${SAMPLE_ID}",
             job_id = "${SAMPLE_ID}",
             refflat_file = "${REFFLAT}",
             refmrna_file = "${REFMRNA}",
