@@ -10,8 +10,6 @@ channels:
 
 # User-defined dependencies of the environment.  
 dependencies:
-
-  # Dependencies for OptiType.
   - conda-forge::python=3.11.2
   - bioconda::optitype=1.3.5
   - conda-forge::pip=23.3.1
@@ -25,8 +23,6 @@ dependencies:
   - conda-forge::hdf5=1.14.3
   - bioconda::razers3=3.5.8
   - conda-forge::glpk=5.0
-
-  # Dependencies for Neoantimon.
   - conda-forge::r-base=4.3.3
   - conda-forge::r-biocmanager=1.30.23
   - conda-forge::r-devtools=2.4.5
@@ -41,4 +37,4 @@ dependencies:
   - bioconda::bioconductor-biomart=2.58.0
 
 # To update the env:
-# conda env update --name optitype --file conda.yml --prune        
+# conda env update --name neoantigen-nf --file conda.yml --prune        
