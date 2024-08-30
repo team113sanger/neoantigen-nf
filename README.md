@@ -19,6 +19,7 @@ If the line below already exists, update the path attributed to `process.conda` 
 ```
 process.conda = 'path/to/neoantigen-pipeline-env'
 ```
+This will allow the `neoantigen-nf` pipeline to use the conda environment created in **Step 1**.
 
 ## Step 3 - Enable conda usage
 Depending on how conda is set up on your system, it may be that conda is not automatically initialised when you get into a terminal and therefore running `conda activate` or any other conda-related commands will not work. If that is the case, run the following command on your command line before triggering the `neoantigen-nf` pipeline.
