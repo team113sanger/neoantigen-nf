@@ -4,7 +4,7 @@ nextflow.enable.dsl = 2
 include { DOWNLOAD_FILES } from "./subworkflows/download_files.nf"
 include { GET_HLA_TYPE } from "./subworkflows/hla_typing.nf"
 include { REFORMAT_DATA } from "./subworkflows/reformat_data.nf"
-include { RUN_NEOANTIMON } from "./modules/modules.nf"
+include { PREPROCESS_RNA_EXPRESSION; RUN_NEOANTIMON } from "./modules/modules.nf"
 
 workflow {
     
@@ -18,7 +18,10 @@ workflow {
         .map { row -> tuple(row.sample, row.vcf, row.bam, row.bai) }
 
     // BED file.
-    bed = file(params.bed_file, checkIfExists: true)            
+    bed = file(params.bed_file, checkIfExists: true)          
+
+    // RNA expression file.
+    rna_expression = file(params.rna_expression, checkIfExists: true)       
 
     // NetMHCpan program.
     netMHCpan = file(params.net_mhc_pan, checkIfExists: true)   
@@ -33,16 +36,27 @@ workflow {
     // Run HLA typing (MHC class I only).
     GET_HLA_TYPE(data, bed)
 
+    // Pre-process RNA expression table.
+    PREPROCESS_RNA_EXPRESSION(rna_expression)
+
     // Reformat data for Neoantimon.
-    REFORMAT_DATA(GET_HLA_TYPE.out.data_for_hla_reformatting)
+    REFORMAT_DATA(
+        GET_HLA_TYPE.out.data_for_hla_reformatting,
+        PREPROCESS_RNA_EXPRESSION.out.preprocessed_rna_expression_table
+    )
+
+    // Create output directory for Neoantimon.
+    neoantimon_dir = file("${params.outdir}/neoantimon")
+    neoantimon_dir.mkdirs()
 
     // Run Neoantimon analysis.
     RUN_NEOANTIMON(
         REFORMAT_DATA.out.data_for_neoantimon,
         DOWNLOAD_FILES.out.refflat,
         DOWNLOAD_FILES.out.refmrna,
+        DOWNLOAD_FILES.out.dna_refseq,
         netMHCpan,
-        params.outdir
+        neoantimon_dir
     )
 
 }

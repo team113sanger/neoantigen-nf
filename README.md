@@ -8,26 +8,26 @@ Go to the [Miniconda website](https://docs.anaconda.com/miniconda/) and download
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 ```
 
-## Step 1 - Create a conda environment
-The configuration file `conda.yml` used in the command below is provided in this repository.
-```
-conda env create -n neoantigen-pipeline-env --file conda.yml
-```
-
-## Step 2 - Add the following line to the `nextflow.config` file
-If the line below already exists, update the path attributed to `process.conda` to reflect the location of the `neoantigen-pipeline-env` environment on your system.
-```
-process.conda = 'path/to/neoantigen-pipeline-env'
-```
-This will allow the `neoantigen-nf` pipeline to use the conda environment created in **Step 1**.
-
-## Step 3 - Enable conda usage
+## Step 1 - Enable conda usage
 Depending on how conda is set up on your system, it may be that conda is not automatically initialised when you get into a terminal and therefore running `conda activate` or any other conda-related commands will not work. If that is the case, run the following command on your command line before triggering the `neoantigen-nf` pipeline.
 ```
 CONDA_PATH=path/to/miniconda3/bin/conda
 eval "$(${CONDA_PATH} shell.bash hook)"
 ```
 Please note that you will have to run this command every time you start a new terminal/shell.
+
+## Step 2 - Create a conda environment
+The configuration file `conda.yml` used in the command below is provided in this repository.
+```
+conda env create -n neoantigen-pipeline-env --file conda.yml
+```
+
+## Step 3 - Add the following line to the `nextflow.config` file
+If the line below already exists, update the path attributed to `process.conda` to reflect the location of the `neoantigen-pipeline-env` environment on your system.
+```
+process.conda = 'path/to/neoantigen-pipeline-env'
+```
+This will allow the `neoantigen-nf` pipeline to use the conda environment created in **Step 1**.
 
 ## Step 4 - Download the NetMHCpan software
 Follow the steps described in the [Neoantimon repository](https://github.com/hase62/Neoantimon/tree/master) to download and set up the NetMHCpan software. You can place NetMHCpan in the location that best suits you. After following that tutorial, you should have something like this:
