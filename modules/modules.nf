@@ -219,16 +219,17 @@ process PREPROCESS_RNA_EXPRESSION {
 
         association <- biomaRt::getBM(
             filters = "ensembl_gene_id",
-            attributes= c("ensembl_gene_id", "chromosome_name", "exon_chrom_start", "exon_chrom_end"),
+            attributes= c("ensembl_gene_id", "chromosome_name", "chromosome_start", "chromosome_end"),
             values = tpm_matrix[["ENSEMBL_GENE_ID"]],
             mart = mart
         ) |>
-            dplyr::mutate(locus = paste0(chromosome_name, ":", exon_chrom_start, "-", exon_chrom_end)) |>
+            dplyr::mutate(locus = paste0(chromosome_name, ":", chromosome_start, "-", chromosome_end)) |>
             dplyr::rename(ENSEMBL_GENE_ID = ensembl_gene_id) |>
             dplyr::select(ENSEMBL_GENE_ID, locus)
-        
+
         updated_tpm_matrix <- dplyr::left_join(tpm_matrix, association, by = dplyr::join_by(ENSEMBL_GENE_ID)) |>
             dplyr::relocate(locus, .after = ENSEMBL_GENE_ID) |>
+            dplyr::distinct(external_gene_name) |>
             readr::write_delim(
                 file = paste0("TPM_count_table_with_locus_info.txt"),
                 delim = "\t",
