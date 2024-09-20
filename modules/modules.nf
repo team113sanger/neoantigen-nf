@@ -217,9 +217,14 @@ process PREPROCESS_RNA_EXPRESSION {
         # Create a biomaRt object.
         mart <- biomaRt::useDataset("hsapiens_gene_ensembl", biomaRt::useMart("ensembl"))
 
+        additional_attributes <- c(
+            "hgnc_symbol", "hgnc_id" , "external_gene_source",
+            "chromosome_name", "chromosome_start", "chromosome_end"
+        )
+
         association <- biomaRt::getBM(
             filters = "ensembl_gene_id",
-            attributes= c("ensembl_gene_id", "chromosome_name", "chromosome_start", "chromosome_end"),
+            attributes = c("ensembl_gene_id", "external_gene_name", additional_attributes),
             values = tpm_matrix[["ENSEMBL_GENE_ID"]],
             mart = mart
         ) |>
@@ -229,7 +234,8 @@ process PREPROCESS_RNA_EXPRESSION {
 
         updated_tpm_matrix <- dplyr::left_join(tpm_matrix, association, by = dplyr::join_by(ENSEMBL_GENE_ID)) |>
             dplyr::relocate(locus, .after = ENSEMBL_GENE_ID) |>
-            dplyr::distinct(external_gene_name) |>
+            dplyr::relocate(additional_attributes, .before = locus) |>
+            dplyr::distinct(hgnc_symbol) |>
             readr::write_delim(
                 file = paste0("TPM_count_table_with_locus_info.txt"),
                 delim = "\t",
@@ -267,7 +273,7 @@ process EXTRACT_RNA_EXPRESSION {
             # Select the column with gene names and the column with gene expression
             # for a given sample.
             sample_tpm <- tpm_matrix |> 
-                dplyr::select(external_gene_name, locus, PR_ID)
+                dplyr::select(hgnc_symbol, locus, PR_ID)
 
             # Save the sample's gene expression to an output file.
             readr::write_delim(
